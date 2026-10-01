@@ -1,0 +1,216 @@
+"use client";
+import dynamic from "next/dynamic";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Maximize, MapPin, Heart, Wifi } from "lucide-react";
+import Brand from "@/components/Brand";
+import DonationCounter from "@/components/DonationCounter";
+import DonationCelebration from "@/components/DonationCelebration";
+import { sedes } from "@/data/sedes";
+import type { Donation, Stats } from "@/lib/types";
+const Map = dynamic(() => import("@/components/DonationMap"), { ssr: false });
+const initialSites = sedes.map((s) => ({ ...s, total: 0, count: 0 }));
+export default function Screen() {
+  const [stats, setStats] = useState<Stats | null>(null),
+    [offline, setOffline] = useState(false),
+    [active, setActive] = useState<Donation | null>(null),
+    [controls, setControls] = useState(true);
+  const queue = useRef<Donation[]>([]),
+    busy = useRef(false),
+    cursor = useRef<string | null>(null),
+    hide = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const next = useCallback(() => {
+    const item = queue.current.shift();
+    busy.current = !!item;
+    setActive(item || null);
+  }, []);
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem("toallaton-stats");
+      if (cached) setStats(JSON.parse(cached));
+      const saved = JSON.parse(
+        localStorage.getItem("toallaton-playback") || "null",
+      );
+      if (saved) {
+        cursor.current = saved.cursor;
+        queue.current = saved.queue || [];
+        if (queue.current.length) next();
+      }
+    } catch {}
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout>;
+    async function poll() {
+      try {
+        const response = await fetch(
+          "/api/donations/latest" +
+            (cursor.current === null ? "" : "?after=" + cursor.current),
+          { cache: "no-store" },
+        );
+        if (!response.ok) throw Error();
+        const data = await response.json();
+        if (stopped) return;
+        queue.current.push(...data.events);
+        cursor.current = data.cursor;
+        localStorage.setItem(
+          "toallaton-playback",
+          JSON.stringify({ cursor: data.cursor, queue: queue.current }),
+        );
+        if (!busy.current && queue.current.length) next();
+        const res = await fetch("/api/stats", { cache: "no-store" });
+        if (!res.ok) throw Error();
+        const summary = await res.json();
+        if (!stopped) {
+          setStats(summary);
+          setOffline(false);
+          localStorage.setItem("toallaton-stats", JSON.stringify(summary));
+        }
+      } catch {
+        if (!stopped) setOffline(true);
+      } finally {
+        if (!stopped) timer = setTimeout(poll, 1000);
+      }
+    }
+    void poll();
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+    };
+  }, [next]);
+  useEffect(() => {
+    if (active) {
+      localStorage.setItem("lastProcessedDonationId", active.id);
+      localStorage.setItem(
+        "toallaton-playback",
+        JSON.stringify({ cursor: cursor.current, queue: queue.current }),
+      );
+    }
+  }, [active]);
+  function mouse() {
+    setControls(true);
+    if (hide.current) clearTimeout(hide.current);
+    hide.current = setTimeout(() => setControls(false), 3000);
+  }
+  useEffect(() => {
+    mouse();
+    return () => {
+      if (hide.current) clearTimeout(hide.current);
+    };
+  }, []);
+  return (
+    <main className="screen" onMouseMove={mouse} onTouchStart={mouse}>
+      <header className="screen-header">
+        <Brand />
+        <div className="event-label">
+          SALUD MENSTRUAL
+          <br />
+          <b>UN COMPROMISO DE TODAS Y TODOS</b>
+        </div>
+        <div className={"connection " + (offline ? "disconnected" : "")}>
+          <span />
+          {offline ? "Reconectando" : stats ? "En vivo" : "Conectando"}
+        </div>
+      </header>
+      <section className="screen-title">
+        <div>
+          <div className="eyebrow gold">SOLIDARIDAD QUE TRANSFORMA</div>
+          <h1>
+            TOALLATÓN <span>UNAM 2026</span>
+          </h1>
+          <p>Sumando voluntades por la salud menstrual</p>
+        </div>
+        <div className="edition">
+          01
+          <span>
+            UNA CAUSA.
+            <br />
+            TODA UNA COMUNIDAD.
+          </span>
+        </div>
+      </section>
+      <section className="event-grid">
+        <aside className="total-panel">
+          <DonationCounter total={stats?.total ?? null} />
+          <div className="small-stats">
+            <div>
+              <MapPin size={20} />
+              <strong>{stats?.sites.length ?? 17}</strong>
+              <span>sedes unidas</span>
+            </div>
+            <div>
+              <Heart size={20} />
+              <strong>{stats?.count.toLocaleString("es-MX") ?? "—"}</strong>
+              <span>donaciones</span>
+            </div>
+          </div>
+          <div className="latest">
+            <span className="eyebrow">ÚLTIMA APORTACIÓN</span>
+            {stats?.latest ? (
+              <>
+                <h3>{stats.latest.site_name}</h3>
+                <p>
+                  +{stats.latest.quantity.toLocaleString("es-MX")} toallas{" "}
+                  <span>¡Gracias por sumar!</span>
+                </p>
+              </>
+            ) : (
+              <p>
+                {offline
+                  ? "Esperando conexión con los registros"
+                  : "La próxima aportación empieza contigo"}
+              </p>
+            )}
+          </div>
+          <div className="cause">
+            <Heart size={17} /> Por una menstruación digna.
+          </div>
+        </aside>
+        <section className="map-panel">
+          <div className="map-heading">
+            <div>
+              <span className="eyebrow">NUESTRA RED SOLIDARIA</span>
+              <h2>México se une</h2>
+            </div>
+            <span className="map-key">
+              <i /> Sedes participantes
+            </span>
+          </div>
+          <Map sites={stats?.sites || initialSites} active={active} />
+          <div className="map-caption">
+            <MapPin size={15} /> Selecciona una sede para conocer sus
+            aportaciones
+          </div>
+          {active && (
+            <DonationCelebration
+              key={active.id}
+              donation={active}
+              onDone={next}
+            />
+          )}
+        </section>
+      </section>
+      <footer className="screen-footer">
+        <span>UNIVERSIDAD NACIONAL AUTÓNOMA DE MÉXICO</span>
+        <span>
+          Tu solidaridad llega más lejos. <b>Cada donación cuenta.</b>
+        </span>
+        <button
+          className={controls ? "fullscreen" : "fullscreen hidden"}
+          onClick={() => {
+            if (!document.fullscreenElement)
+              void document.documentElement
+                .requestFullscreen?.()
+                .catch(() => {});
+            else void document.exitFullscreen();
+          }}
+        >
+          <Maximize size={15} /> Pantalla completa
+        </button>
+      </footer>
+      {offline && (
+        <div className="offline-note">
+          <Wifi size={14} /> Sin conexión con los registros. Conservamos los
+          últimos datos disponibles.
+        </div>
+      )}
+    </main>
+  );
+}
