@@ -1,5 +1,7 @@
 # Publicar el proyecto actual en Vercel
 
+El proyecto `toallaton-unam` ya está enlazado a `albertovaldespino/toallaton-unam-2026`. Los nuevos cambios enviados a `main` pueden desplegarse automáticamente mediante la integración Git de Vercel.
+
 Se utiliza la base Neon existente `toallaton-unam-2026`. No hay que crear otra base ni activar una integración de almacenamiento de Vercel. Este procedimiento publica los archivos actuales, incluidos los escudos y el video.
 
 ## 1. Enlazar esta carpeta con Vercel
