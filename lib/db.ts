@@ -1,5 +1,5 @@
-import { neon } from "@neondatabase/serverless";
+import { neon } from '@neondatabase/serverless';
+import { databaseConfig } from './database-config';
 export function db() {
-  if (!process.env.DATABASE_URL) throw new Error("DATABASE_NOT_CONFIGURED");
-  return neon(process.env.DATABASE_URL);
+  return neon(databaseConfig().connectionString);
 }

@@ -2,9 +2,17 @@
 
 Aplicación Next.js + TypeScript para Salud UNAM. Incluye los dos escudos originales y el video entregado (856 × 1072, aproximadamente 5 segundos). Diseño azul, blanco, dorado y rosa; estilos CSS propios. No utiliza Tailwind.
 
+## Conexión mediante la integración Neon–Vercel
+
+Producción utiliza directamente las variables inyectadas por la integración: `DATABASE_URL` para la aplicación y `DATABASE_URL_UNPOOLED` para migraciones. No hay que copiar cadenas ni crear otra base. La selección compartida también admite `POSTGRES_URL`, `POSTGRES_PRISMA_URL` y `POSTGRES_URL_NON_POOLING` para instalaciones anteriores. Los valores nunca se imprimen.
+
+Se verificó la conexión de producción, se inicializó el esquema y se comprobaron las 17 sedes. Se validó una inserción de donación dentro de una transacción revertida, sin conservar datos de prueba. `ADMIN_PASSWORD` es independiente de Neon y debe existir en producción para habilitar el administrador.
+
+Las instrucciones de `.env.local` de abajo son una alternativa para desarrollo local; no son un requisito del despliegue con integración.
+
 ## Estado de entrega
 
-Compilación y TypeScript verificados. Rutas `/pantalla` y `/admin` disponibles. Sin datos ficticios. **La conexión real y las pruebas de escritura en PostgreSQL están pendientes** porque todavía no se ha creado la base. No se ha publicado en Internet. La implementación usa el controlador HTTP de Neon; para un PostgreSQL de otro proveedor se debe adaptar `lib/db.ts`.
+Compilación y TypeScript verificados. Rutas `/pantalla` y `/admin` disponibles. Sin datos ficticios. La conexión de producción y el esquema se verificaron el 1 de octubre de 2026. La implementación usa el controlador HTTP de Neon; para un PostgreSQL de otro proveedor se debe adaptar `lib/db.ts`.
 
 Se revisaron el mapa y las 17 sedes en el navegador integrado (Chromium), el administrador y la reproducción del video. Safari y el flujo completo entre dos equipos con base real quedan pendientes de validación antes del evento.
 

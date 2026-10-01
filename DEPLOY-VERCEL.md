@@ -14,20 +14,23 @@ npx vercel@latest link
 
 Inicia sesión en el navegador. En el asistente de `link`, selecciona tu cuenta/equipo y crea un **proyecto de aplicación** llamado `toallaton-unam-2026` (o enlaza el existente si ya creaste uno en Vercel). Crear este proyecto no crea una base de datos. Usa esta carpeta como raíz, acepta Next.js y conserva las opciones de compilación. No hace falta repositorio GitHub.
 
-## 2. Configurar los secretos en Vercel
+## 2. Variables de la integración
 
-En el panel del proyecto, abre **Settings → Environment Variables**. Agrega para **Production**:
+Neon ya proporciona `DATABASE_URL` y `DATABASE_URL_UNPOOLED` para Production. La aplicación utiliza la primera y la migración prefiere la segunda. No copies contraseñas, no dupliques estas variables manualmente y no crees otra base. Se admiten además los nombres heredados POSTGRES_URL, POSTGRES_PRISMA_URL y POSTGRES_URL_NON_POOLING.
 
-| Variable | Valor |
-| --- | --- |
-| `DATABASE_URL` | Cadena de conexión de tu base Neon existente `toallaton-unam-2026`, obtenida en Connect. Conserva los parámetros SSL proporcionados por Neon. |
-| `ADMIN_PASSWORD` | Una clave privada larga para quienes registrarán donaciones. |
-
-Introduce los valores directamente en Vercel, sin pegarlos en el chat ni en comandos de Terminal. No uses el prefijo `NEXT_PUBLIC_`. El archivo `.env.local` no se sube: Vercel necesita sus propias variables configuradas en el panel. No actives una integración que aprovisione una base nueva.
+Configura únicamente `ADMIN_PASSWORD` directamente en Settings → Environment Variables para Production si aún falta. Esta clave de acceso a la aplicación no es una contraseña de Neon. Tras cambiar variables, publica un nuevo despliegue.
 
 ## 3. Preparar las tablas en la base existente
 
-Si todavía no ejecutaste la migración, configura localmente `DATABASE_URL` en `.env.local` con la misma conexión de Neon. Desde la carpeta del proyecto:
+El esquema de producción y las 17 sedes ya se inicializaron. Para futuras verificaciones, obtén el entorno automáticamente, sin copiar valores ni sobrescribir tu archivo local:
+
+```sh
+vercel env pull .vercel/.env.production.local --environment=production
+node --env-file=.vercel/.env.production.local scripts/check-db.mjs
+node --env-file=.vercel/.env.production.local scripts/migrate.mjs
+```
+
+El directorio `.vercel` está excluido de Git y del despliegue. Si el entorno ya está cargado, también puedes usar:
 
 ```sh
 npm run db:check

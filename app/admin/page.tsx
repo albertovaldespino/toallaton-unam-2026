@@ -184,7 +184,7 @@ export default function Admin() {
           <div className="notice error" role="alert">
             {error}
             {!connected &&
-              " Configura DATABASE_URL y ejecuta la migración para habilitar los registros."}
+              " Revisa la integración de Neon y el esquema de la base de datos para habilitar los registros."}
           </div>
         )}
         {success && (
