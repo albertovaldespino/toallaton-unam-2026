@@ -1,26 +1,29 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { goalProgress } from "../lib/goal.ts";
+import { DONATION_GOAL, goalProgress } from "../lib/goal.ts";
 import { donationDashboard } from "../lib/dashboard.ts";
 import { sedes } from "../data/sedes.ts";
 test("goal boundary, over-goal totals and reversals", () => {
-  assert.equal(goalProgress(0).remaining, 12001);
-  assert.equal(goalProgress(12000).reached, false);
-  assert.deepEqual(goalProgress(12001), {
-    total: 12001,
+  assert.equal(DONATION_GOAL, 15000);
+  assert.equal(goalProgress(7500).percent, 50);
+  assert.equal(goalProgress(14999).remaining, 1);
+  assert.equal(goalProgress(0).remaining, 15000);
+  assert.equal(goalProgress(14999).reached, false);
+  assert.deepEqual(goalProgress(15000), {
+    total: 15000,
     remaining: 0,
     percent: 100,
     reached: true,
     exceeded: false,
   });
-  assert.deepEqual(goalProgress(12500), {
-    total: 12500,
+  assert.deepEqual(goalProgress(15500), {
+    total: 15500,
     remaining: 0,
     percent: 100,
     reached: true,
     exceeded: true,
   });
-  assert.equal(goalProgress(11900).reached, false);
+  assert.equal(goalProgress(14999).reached, false);
 });
 test("dashboard includes more than 100 records, real sums and Mexico City dates", () => {
   const records = Array.from({ length: 125 }, (_, i) => ({

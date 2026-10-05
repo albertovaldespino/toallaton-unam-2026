@@ -1,14 +1,19 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  forwardRef,
+  useImperativeHandle,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import type { Donation } from "@/lib/types";
 import { fireworks } from "./Fireworks";
-export default function DonationCelebration({
-  donation,
-  onDone,
-}: {
-  donation: Donation | null;
-  onDone: () => void;
-}) {
+export type CelebrationHandle = { activateSound: () => Promise<boolean> };
+const DonationCelebration = forwardRef<
+  CelebrationHandle,
+  { donation: Donation | null; onDone: () => void }
+>(function DonationCelebration({ donation, onDone }, ref) {
   const [stage, setStage] = useState(0),
     [blocked, setBlocked] = useState(false);
   const video = useRef<HTMLVideoElement>(null),
@@ -43,6 +48,31 @@ export default function DonationCelebration({
       } else if (error.name !== "AbortError") finish();
     });
   }, [finish]);
+  useImperativeHandle(
+    ref,
+    () => ({
+      async activateSound() {
+        const element = video.current;
+        if (!element) return false;
+        if (current.current && stage === 2) {
+          play();
+          return true;
+        }
+        // Prime this same media element in the click handler, then immediately pause.
+        // Never let Queen play outside a donation or change mute/volume to unlock it.
+        const activation = element.play();
+        element.pause();
+        element.currentTime = 0;
+        try {
+          await activation;
+          return true;
+        } catch (error) {
+          return (error as DOMException).name === "AbortError";
+        }
+      },
+    }),
+    [stage, play],
+  );
   useEffect(() => {
     const element = video.current;
     done.current = false;
@@ -100,10 +130,26 @@ export default function DonationCelebration({
           <p>Cada donación cuenta 💜</p>
         </div>
       )}
+      {donation && stage === 2 && (
+        <div className="celebration-sparkles" aria-hidden="true">
+          {Array.from({ length: 10 }, (_, i) => (
+            <span
+              key={i}
+              style={{
+                left: `${8 + i * 9}%`,
+                top: `${12 + ((i * 17) % 74)}%`,
+                animationDelay: `${i * 0.24}s`,
+              }}
+            >
+              {i % 3 === 0 ? "♡" : "✦"}
+            </span>
+          ))}
+        </div>
+      )}
       <video
         ref={video}
         className={stage === 2 && donation ? "" : "celebration-video-hidden"}
-        src="/videos/gracias-donacion-queen.mp4"
+        src="/videos/gracias-donacion-queen-transparente.webm"
         autoPlay={!!donation && stage === 2}
         playsInline
         preload="auto"
@@ -114,17 +160,15 @@ export default function DonationCelebration({
         }}
       />
       {blocked && donation && stage === 2 && (
-        <div className="audio-permission">
-          <p>El navegador bloqueó la reproducción con sonido.</p>
-          <button className="button" onClick={play}>
-            Reproducir agradecimiento con audio
-          </button>
-          <p>
-            Autoriza la reproducción automática en este navegador para las
-            siguientes donaciones.
-          </p>
-        </div>
+        <button
+          className="audio-recovery"
+          onClick={play}
+          title="El navegador requiere una interacción para reproducir con sonido"
+        >
+          🔊 Reproducir con sonido
+        </button>
       )}
     </div>
   );
-}
+});
+export default DonationCelebration;

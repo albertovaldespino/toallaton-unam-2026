@@ -1,4 +1,4 @@
-export const DONATION_GOAL = 12001;
+export const DONATION_GOAL = 15000;
 export function goalProgress(total: number) {
   const safeTotal = Math.max(0, total);
   return {

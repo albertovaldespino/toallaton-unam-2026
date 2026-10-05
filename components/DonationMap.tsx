@@ -24,6 +24,7 @@ export default function DonationMap({
     if (!node.current) return;
     const m = L.map(node.current, {
       zoomControl: false,
+      zoomSnap: 0.1,
       scrollWheelZoom: false,
     }).fitBounds(national, { padding: [15, 15] });
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -84,7 +85,7 @@ export default function DonationMap({
         className="map"
         aria-label="Mapa de sedes participantes en México"
       />
-      <PumaMap />
+      <div className="puma-safe-zone"><PumaMap /></div>
     </>
   );
 }

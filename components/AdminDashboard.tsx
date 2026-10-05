@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import type { Donation } from "@/lib/types";
 import type { Site } from "@/data/sedes";
 import { donationDashboard } from "@/lib/dashboard";
-import { goalProgress } from "@/lib/goal";
+import { DONATION_GOAL, goalProgress } from "@/lib/goal";
 import GoalProgress from "./GoalProgress";
 const fmt = (n: number) =>
   n.toLocaleString("es-MX", { maximumFractionDigits: 1 });
@@ -164,7 +164,9 @@ export default function AdminDashboard({
               La evolución aparecerá con la primera donación.
             </p>
           )}
-          <h3 className="dashboard-goal-title">Avance hacia 12,001</h3>
+          <h3 className="dashboard-goal-title">
+            Avance hacia {fmt(DONATION_GOAL)}
+          </h3>
           <GoalProgress total={data.total} />
         </article>
       </div>
@@ -258,8 +260,8 @@ export default function AdminDashboard({
         </div>
       </article>
       <p className="report-footer">
-        Informe Toallatón UNAM 2026 · Meta: 12,001 toallas · {fmt(data.total)}{" "}
-        registradas · {fmt(progress.remaining)} faltantes.
+        Informe Toallatón UNAM 2026 · Meta: {fmt(DONATION_GOAL)} toallas ·{" "}
+        {fmt(data.total)} registradas · {fmt(progress.remaining)} faltantes.
       </p>
     </section>
   );
