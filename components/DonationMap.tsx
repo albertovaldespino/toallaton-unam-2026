@@ -2,7 +2,7 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import MetroMap from "./MetroMap";
+import PumaMap from "./PumaMap";
 import type { Stats, Donation } from "@/lib/types";
 const national: L.LatLngBoundsExpression = [
   [14.2, -118.5],
@@ -18,6 +18,8 @@ export default function DonationMap({
   const node = useRef<HTMLDivElement>(null),
     map = useRef<L.Map | null>(null),
     markers = useRef<L.LayerGroup | null>(null);
+  const activeRef = useRef(active);
+  activeRef.current = active;
   useEffect(() => {
     if (!node.current) return;
     const m = L.map(node.current, {
@@ -34,7 +36,7 @@ export default function DonationMap({
     markers.current = L.layerGroup().addTo(m);
     const resize = new ResizeObserver(() => {
       m.invalidateSize();
-      if (!active) m.fitBounds(national, { padding: [15, 15] });
+      if (!activeRef.current) m.fitBounds(national, { padding: [15, 15] });
     });
     resize.observe(node.current);
     return () => {
@@ -43,6 +45,7 @@ export default function DonationMap({
       map.current = null;
     };
   }, []);
+  const markerData = JSON.stringify(sites);
   useEffect(() => {
     if (!markers.current) return;
     markers.current.clearLayers();
@@ -66,7 +69,7 @@ export default function DonationMap({
         .bindPopup(div)
         .addTo(markers.current);
     }
-  }, [sites, active]);
+  }, [markerData, active?.site_id]);
   useEffect(() => {
     if (!map.current) return;
     const site = sites.find((s) => s.id === active?.site_id);
@@ -81,7 +84,7 @@ export default function DonationMap({
         className="map"
         aria-label="Mapa de sedes participantes en México"
       />
-      {!active && <MetroMap sites={sites} />}
+      <PumaMap />
     </>
   );
 }

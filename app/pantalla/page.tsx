@@ -3,6 +3,9 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Maximize, MapPin, Heart, Wifi } from "lucide-react";
 import Brand from "@/components/Brand";
+import GoalProgress from "@/components/GoalProgress";
+import GoalCelebration from "@/components/GoalCelebration";
+import { DONATION_GOAL } from "@/lib/goal";
 import DonationCounter from "@/components/DonationCounter";
 import DonationCelebration from "@/components/DonationCelebration";
 import { sedes } from "@/data/sedes";
@@ -96,7 +99,15 @@ export default function Screen() {
     };
   }, []);
   return (
-    <main className="screen" onMouseMove={mouse} onTouchStart={mouse}>
+    <main
+      className={
+        "screen" +
+        ((stats?.total ?? 0) >= DONATION_GOAL ? " screen-goal-reached" : "")
+      }
+      onMouseMove={mouse}
+      onTouchStart={mouse}
+    >
+      <GoalCelebration active={(stats?.total ?? 0) >= DONATION_GOAL} />
       <header className="screen-header">
         <Brand />
         <div className="event-label">
@@ -126,9 +137,22 @@ export default function Screen() {
           </span>
         </div>
       </section>
+      {(stats?.total ?? 0) >= DONATION_GOAL && (
+        <div className="goal-banner" role="status">
+          <strong>¡META ALCANZADA!</strong>
+          <span>12,001 TOALLAS</span>
+          {stats!.total > DONATION_GOAL && (
+            <b>
+              Total real: {stats!.total.toLocaleString("es-MX")} toallas · META
+              SUPERADA
+            </b>
+          )}
+        </div>
+      )}
       <section className="event-grid">
         <aside className="total-panel">
           <DonationCounter total={stats?.total ?? null} />
+          <GoalProgress total={stats?.total ?? null} />
           <div className="small-stats">
             <div>
               <MapPin size={20} />
@@ -159,6 +183,13 @@ export default function Screen() {
               </p>
             )}
           </div>
+          <div className="public-leader">
+            Sede líder:{" "}
+            <b>
+              {stats?.sites.find((s) => s.total > 0)?.nombreCorto ||
+                "Por comenzar"}
+            </b>
+          </div>
           <div className="cause">
             <Heart size={17} /> Por una menstruación digna.
           </div>
@@ -178,13 +209,7 @@ export default function Screen() {
             <MapPin size={15} /> Selecciona una sede para conocer sus
             aportaciones
           </div>
-          {active && (
-            <DonationCelebration
-              key={active.id}
-              donation={active}
-              onDone={next}
-            />
-          )}
+          <DonationCelebration donation={active} onDone={next} />
         </section>
       </section>
       <footer className="screen-footer">

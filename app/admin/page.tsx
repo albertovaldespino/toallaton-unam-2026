@@ -11,6 +11,7 @@ import {
   Check,
   LogOut,
 } from "lucide-react";
+import AdminDashboard from "@/components/AdminDashboard";
 import Brand from "@/components/Brand";
 import { sedes, type Site } from "@/data/sedes";
 import type { Stats, Donation } from "@/lib/types";
@@ -32,17 +33,27 @@ export default function Admin() {
     [addSite, setAddSite] = useState(false),
     [connected, setConnected] = useState(false);
   const pending = useRef<string | null>(null);
+  const authRef = useRef(key);
+  authRef.current = key;
+  const refreshing = useRef(false);
   const selected = sites.find((s) => s.id === site);
   const refresh = useCallback(async () => {
+    if (refreshing.current) return;
+    refreshing.current = true;
     try {
       const responses = await Promise.all([
         fetch("/api/stats"),
         fetch("/api/sites"),
         ...(key
-          ? [fetch("/api/donations", { headers: { "x-admin-password": key } })]
+          ? [
+              fetch("/api/donations?all=1", {
+                headers: { "x-admin-password": key },
+              }),
+            ]
           : []),
       ]);
       const values = await Promise.all(responses.map((r) => r.json()));
+      if (authRef.current !== key) return;
       if (responses.some((r) => !r.ok))
         throw Error(values.find((v) => v.error)?.error || "No hay conexión.");
       setStats(values[0]);
@@ -51,14 +62,25 @@ export default function Admin() {
       setConnected(true);
       setError("");
     } catch (e) {
+      if (authRef.current !== key) return;
       setConnected(false);
       setError((e as Error).message);
+    } finally {
+      refreshing.current = false;
     }
   }, [key]);
   useEffect(() => {
-    void refresh();
-    const t = setInterval(() => void refresh(), 5000);
-    return () => clearInterval(t);
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout>;
+    async function poll() {
+      await refresh();
+      if (!stopped) timer = setTimeout(poll, 5000);
+    }
+    void poll();
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+    };
   }, [refresh]);
   async function request(path: string, method: string, body?: unknown) {
     const response = await fetch(path, {
@@ -139,6 +161,7 @@ export default function Admin() {
               onClick={() => {
                 setKey("");
                 setPassword("");
+                setHistory([]);
               }}
               aria-label="Cerrar sesión"
             >
@@ -379,7 +402,7 @@ export default function Admin() {
                 </tr>
               </thead>
               <tbody>
-                {history.map((d) => (
+                {history.slice(0, 100).map((d) => (
                   <tr key={d.id}>
                     <td>
                       {new Date(d.created_at).toLocaleString("es-MX", {
@@ -411,6 +434,9 @@ export default function Admin() {
             )}
           </div>
         </section>
+        {key && connected && stats && (
+          <AdminDashboard donations={history} sites={sites} />
+        )}
         <footer className="admin-footer">
           SALUD UNAM <span>Cada donación cuenta.</span>
         </footer>

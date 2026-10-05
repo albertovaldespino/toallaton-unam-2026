@@ -4,9 +4,14 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
   if (!authorized(req)) return forbidden();
   try {
-    return Response.json(
-      await db()`SELECT id,sequence::text,site_id,site_name,quantity,donor,notes,created_at FROM donations WHERE deleted_at IS NULL ORDER BY sequence DESC LIMIT 100`,
-    );
+    const all = new URL(req.url).searchParams.get("all") === "1";
+    const sql = db();
+    const rows = all
+      ? await sql`SELECT id,sequence::text,site_id,site_name,quantity,donor,notes,created_at FROM donations WHERE deleted_at IS NULL ORDER BY sequence DESC`
+      : await sql`SELECT id,sequence::text,site_id,site_name,quantity,donor,notes,created_at FROM donations WHERE deleted_at IS NULL ORDER BY sequence DESC LIMIT 100`;
+    return Response.json(rows, {
+      headers: { "Cache-Control": "private, no-store" },
+    });
   } catch (e) {
     return failure(e);
   }
