@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Maximize, MapPin, Heart, Wifi } from "lucide-react";
 import Brand from "@/components/Brand";
 import GoalProgress from "@/components/GoalProgress";
+import GoalAudio, { type GoalAudioHandle } from "@/components/GoalAudio";
 import GoalCelebration from "@/components/GoalCelebration";
 import { DONATION_GOAL } from "@/lib/goal";
 import DonationCounter from "@/components/DonationCounter";
@@ -19,8 +20,10 @@ export default function PublicScreen({ vertical = false }: { vertical?: boolean 
     [offline, setOffline] = useState(false),
     [active, setActive] = useState<Donation | null>(null),
     [controls, setControls] = useState(true),
-    [soundEnabled, setSoundEnabled] = useState(false);
+    [soundEnabled, setSoundEnabled] = useState(false),
+    [celebrationPlaying, setCelebrationPlaying] = useState(false);
   const celebration = useRef<CelebrationHandle>(null);
+  const goalAudio = useRef<GoalAudioHandle>(null);
   useEffect(() => {
     try {
       setSoundEnabled(
@@ -29,7 +32,7 @@ export default function PublicScreen({ vertical = false }: { vertical?: boolean 
     } catch {}
   }, []);
   async function activateSound() {
-    const enabled = await celebration.current?.activateSound();
+    const [enabled] = await Promise.all([celebration.current?.activateSound(), goalAudio.current?.activateSound()]);
     if (enabled) {
       setSoundEnabled(true);
       try {
@@ -127,6 +130,7 @@ export default function PublicScreen({ vertical = false }: { vertical?: boolean 
       onMouseMove={mouse}
       onTouchStart={mouse}
     >
+      <GoalAudio ref={goalAudio} reached={(stats?.total ?? 0) >= DONATION_GOAL} donationActive={!!active} />
       <GoalCelebration active={(stats?.total ?? 0) >= DONATION_GOAL} total={stats?.total ?? 0} />
       <header className="screen-header">
         <Brand />
@@ -225,7 +229,7 @@ export default function PublicScreen({ vertical = false }: { vertical?: boolean 
               <i /> Sedes participantes
             </span>
           </div>
-          <Map sites={stats?.sites || initialSites} active={active} />
+          <Map sites={stats?.sites || initialSites} active={active} paused={celebrationPlaying} />
           {(stats?.total ?? 0) >= DONATION_GOAL && (
             <div className="goal-banner" role="status">
               <strong>¡META ALCANZADA!</strong>
@@ -248,6 +252,7 @@ export default function PublicScreen({ vertical = false }: { vertical?: boolean 
             ref={celebration}
             donation={active}
             onDone={next}
+            onPlaybackChange={setCelebrationPlaying}
           />
         </section>
       </section>

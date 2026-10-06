@@ -3,6 +3,14 @@ import { useEffect, useRef, useState } from "react";
 export default function DonationCounter({ total }: { total: number | null }) {
   const [value, setValue] = useState(0);
   const current = useRef(0);
+  const previous = useRef(total);
+  const [pulse, setPulse] = useState(false);
+  useEffect(() => {
+    const increase = previous.current !== null && total !== null && total > previous.current;
+    previous.current = total; setPulse(increase);
+    const timer = setTimeout(() => setPulse(false), 900);
+    return () => clearTimeout(timer);
+  }, [total]);
   useEffect(() => {
     if (total === null) return;
     const start = performance.now(),
@@ -20,7 +28,7 @@ export default function DonationCounter({ total }: { total: number | null }) {
     return () => cancelAnimationFrame(frame);
   }, [total]);
   return (
-    <div className="counter">
+    <div className={`counter ${pulse ? "counter-donation-pulse" : ""}`}>
       <span className="eyebrow">JUNTAS Y JUNTOS SUMAMOS</span>
       <strong>{total === null ? "—" : value.toLocaleString("es-MX")}</strong>
       <span>TOALLAS FEMENINAS DONADAS</span>

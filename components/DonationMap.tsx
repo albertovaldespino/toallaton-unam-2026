@@ -11,9 +11,11 @@ const national: L.LatLngBoundsExpression = [
 export default function DonationMap({
   sites,
   active,
+  paused = false,
 }: {
   sites: Stats["sites"];
   active: Donation | null;
+  paused?: boolean;
 }) {
   const node = useRef<HTMLDivElement>(null),
     map = useRef<L.Map | null>(null),
@@ -85,7 +87,7 @@ export default function DonationMap({
         className="map"
         aria-label="Mapa de sedes participantes en México"
       />
-      <div className="puma-safe-zone"><PumaMap /></div>
+      <div className="puma-safe-zone"><PumaMap paused={paused} /></div>
     </>
   );
 }

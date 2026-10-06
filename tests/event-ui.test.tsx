@@ -23,20 +23,20 @@ it('Puma loops silently, cannot be unmuted, and has no controls',()=>{
  expect(v.muted).toBe(true);expect(v.loop).toBe(true);expect(v.autoplay).toBe(true);expect(v.playsInline).toBe(true);expect(v.controls).toBe(false);
  v.muted=false;fireEvent.volumeChange(v);expect(v.muted).toBe(true);expect(v.getAttribute('src')).toBe('/videos/Puma_transparente_mapa.webm');
 });
-it('Queen plays with original volume, is not cut at 45 seconds, closes once on ended and stops audio',async()=>{
+it('new applause video plays with original volume, is not cut at 45 seconds, closes once on ended and stops audio',async()=>{
  const done=vi.fn();const {container,rerender}=render(<DonationCelebration donation={donation} onDone={done}/>);
  await act(async()=>vi.advanceTimersByTimeAsync(5000));const v=container.querySelector('video')!;
- expect(v.muted).toBe(false);expect(v.hasAttribute('muted')).toBe(false);expect(v.volume).toBe(1);expect(v.loop).toBe(false);expect(v.getAttribute('src')).toBe('/videos/gracias-donacion-queen-transparente.webm');
+ expect(v.muted).toBe(false);expect(v.hasAttribute('muted')).toBe(false);expect(v.volume).toBe(1);expect(v.loop).toBe(false);expect(v.getAttribute('src')).toBe('/videos/Toallaton_Gracias_Puma_Aplausos_CORREGIDO.webm');
  for(let i=0;i<10;i++){await act(async()=>vi.advanceTimersByTimeAsync(5000));fireEvent.timeUpdate(v)}
- expect(done).not.toHaveBeenCalled();fireEvent.ended(v);fireEvent.ended(v);expect(done).toHaveBeenCalledTimes(1);expect(v.pause).toHaveBeenCalled();
+ expect(done).not.toHaveBeenCalled();fireEvent.ended(v);fireEvent.ended(v);await act(async()=>vi.advanceTimersByTimeAsync(300));expect(done).toHaveBeenCalledTimes(1);expect(v.pause).toHaveBeenCalled();
  rerender(<DonationCelebration donation={null} onDone={done}/>);expect(container.querySelector('.celebration-idle')).not.toBeNull();expect(container.querySelector('video')).toBe(v);
 });
 it('blocked audible autoplay preserves donation until explicit recovery, never falls back to mute',async()=>{
  vi.mocked(HTMLMediaElement.prototype.play).mockRejectedValueOnce(new DOMException('Blocked','NotAllowedError'));
  const done=vi.fn();const {container}=render(<DonationCelebration donation={donation} onDone={done}/>);
  await act(async()=>vi.advanceTimersByTimeAsync(5000));expect(screen.getByRole('button',{name:'🔊 Reproducir con sonido'})).toBeTruthy();
- await act(async()=>vi.advanceTimersByTimeAsync(70000));expect(done).not.toHaveBeenCalled();expect(container.querySelector('video')!.muted).toBe(false);
- await act(async()=>fireEvent.click(screen.getByRole('button',{name:'🔊 Reproducir con sonido'})));fireEvent.ended(container.querySelector('video')!);expect(done).toHaveBeenCalledTimes(1);
+ await act(async()=>vi.advanceTimersByTimeAsync(1000));expect(done).not.toHaveBeenCalled();expect(container.querySelector('video')!.muted).toBe(false);
+ await act(async()=>fireEvent.click(screen.getByRole('button',{name:'🔊 Reproducir con sonido'})));fireEvent.ended(container.querySelector('video')!);await act(async()=>vi.advanceTimersByTimeAsync(300));expect(done).toHaveBeenCalledTimes(1);
 });
 it('goal remains active at or above threshold and cancels effects below it',()=>{
  const {rerender}=render(<><GoalProgress total={15000}/><GoalCelebration active/></>);expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('100');expect(screen.getByText('¡META ALCANZADA!')).toBeTruthy();expect(effects.launch).toHaveBeenCalled();
@@ -68,7 +68,7 @@ it('admin failed save does not publish a donation; successful save keeps selecte
  fail=false;await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Confirmar donación'})));expect(records).toHaveLength(1);expect((writes[0] as {id:string}).id).toBe((writes[1] as {id:string}).id);expect((screen.getByLabelText('Sede participante') as HTMLSelectElement).value).toBe('musica');expect((screen.getByLabelText('Cantidad de toallas') as HTMLInputElement).value).toBe('');expect(screen.getByRole('heading',{name:'DASHBOARD'})).toBeTruthy();
 });
 
-it('public sound activation is saved for the session and pauses Queen outside donations',async()=>{
+it('public sound activation is saved for the session and pauses new applause video outside donations',async()=>{
  vi.stubGlobal('fetch',vi.fn(async(input:string)=>Response.json(input.startsWith('/api/donations/latest')?{cursor:'0',events:[]}:stats(0))));
  render(<PublicScreen/>);await act(async()=>vi.advanceTimersByTimeAsync(1));
  await act(async()=>fireEvent.click(screen.getByRole('button',{name:'🔊 Activar sonido de celebraciones'})));
@@ -108,4 +108,69 @@ it('goal effects emit an extra burst after new donations and clean up intervals'
  effects.launch.mockClear();rerender(<GoalCelebration active total={15350}/>);
  expect(effects.launch).toHaveBeenCalled();unmount();effects.launch.mockClear();
  act(()=>vi.advanceTimersByTime(10000));expect(effects.launch).not.toHaveBeenCalled();
+});
+
+it('five queued donations reuse one video, keep totals and remove effects after each end',async()=>{
+ let events:Donation[]=[];
+ vi.stubGlobal('fetch',vi.fn(async(input:string)=>{
+ if(input.startsWith('/api/donations/latest')) {const after=new URL(input,'http://local').searchParams.get('after');return Response.json({cursor:after===null?'0':events.at(-1)?.sequence||'0',events:after===null?[]:events.filter(e=>Number(e.sequence)>Number(after))});}
+ return Response.json(stats(15000+events.length*500));
+ }));
+ render(<PublicScreen/>);await act(async()=>vi.advanceTimersByTimeAsync(1));
+ events=Array.from({length:5},(_,i)=>({...donation,id:`local-${i}`,sequence:String(i+1)}));
+ await act(async()=>vi.advanceTimersByTimeAsync(1700));
+ await act(async()=>vi.advanceTimersByTimeAsync(700));
+ const video=document.querySelector('video')!;
+ for(let i=0;i<5;i++) {
+  expect(document.querySelectorAll('video')).toHaveLength(1);
+  expect(document.querySelectorAll('.party-confetti')).toHaveLength(84);
+  expect(document.querySelectorAll('.party-star')).toHaveLength(10);
+  fireEvent.playing(video); await act(async()=>vi.advanceTimersByTimeAsync(5050));fireEvent.ended(video);
+  expect(document.querySelector('.donation-particles')).toBeNull();
+  await act(async()=>vi.advanceTimersByTimeAsync(1000));
+  await act(async()=>vi.advanceTimersByTimeAsync(700));
+  expect(document.querySelector('video')).toBe(video);
+ }
+ expect(document.querySelector('.celebration-idle')).not.toBeNull();
+ expect(vi.mocked(HTMLMediaElement.prototype.play).mock.contexts.filter(element => element instanceof HTMLVideoElement)).toHaveLength(5);
+ expect(screen.getByText(/TOTAL ALCANZADO.*17,500/)).toBeTruthy();
+});
+it('permanent Puma pauses and resumes silently on the same element',()=>{
+ const {container,rerender}=render(<PumaMap/>);const video=container.querySelector('video');
+ rerender(<PumaMap paused/>);expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();expect(video?.muted).toBe(true);
+ rerender(<PumaMap/>);expect(container.querySelector('video')).toBe(video);expect(video?.muted).toBe(true);
+});
+it('denied autoplay does not block the queue indefinitely',async()=>{
+ vi.mocked(HTMLMediaElement.prototype.play).mockRejectedValue(new DOMException('Blocked','NotAllowedError'));
+ const done=vi.fn();render(<DonationCelebration donation={donation} onDone={done}/>);
+ await act(async()=>vi.advanceTimersByTimeAsync(700));
+ await act(async()=>vi.advanceTimersByTimeAsync(15000));
+ await act(async()=>vi.advanceTimersByTimeAsync(300));expect(done).toHaveBeenCalledTimes(1);
+});
+it('one festive donation has bounded fireworks confetti and sparkles and clears them on end',async()=>{
+ const done=vi.fn();const {container}=render(<DonationCelebration donation={donation} onDone={done}/>);
+ await act(async()=>vi.advanceTimersByTimeAsync(700));
+ expect(container.querySelectorAll('.party-confetti')).toHaveLength(84);
+ expect(container.querySelectorAll('.party-star')).toHaveLength(10);
+ expect(container.querySelectorAll('.party-burst')).toHaveLength(6);
+ expect(container.querySelectorAll('.party-burst i')).toHaveLength(96);
+ expect(container.querySelectorAll('.party-initial-burst')).toHaveLength(1);
+ const video=container.querySelector('video')!;
+ expect(video.src).toContain('Toallaton_Gracias_Puma_Aplausos_CORREGIDO.webm');
+ fireEvent.ended(video);expect(container.querySelector('.donation-particles')).toBeNull();
+ await act(async()=>vi.advanceTimersByTimeAsync(300));expect(done).toHaveBeenCalledTimes(1);
+});
+
+it('goal song starts at goal, pauses for donation audio, resumes and does not loop',async()=>{
+ const GoalAudio=(await import('@/components/GoalAudio')).default;
+ const {container,rerender}=render(<GoalAudio reached={false} donationActive={false}/>);
+ const audio=container.querySelector('audio')!;expect(audio.loop).toBe(false);
+ expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
+ rerender(<GoalAudio reached donationActive={false}/>);await act(async()=>{});
+ expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(1);
+ rerender(<GoalAudio reached donationActive/>);expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
+ rerender(<GoalAudio reached donationActive={false}/>);await act(async()=>{});
+ expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(2);
+ fireEvent.ended(audio);rerender(<GoalAudio reached donationActive/>);rerender(<GoalAudio reached donationActive={false}/>);
+ expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(2);
 });

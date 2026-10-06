@@ -42,7 +42,7 @@ export default function GoalProgress({
               : progress.percent.toLocaleString("es-MX", {
                   maximumFractionDigits: 1,
                 })}
-            <small>%</small>
+            <small>%</small><small className="advance-label">AVANCE</small>
           </b>
         </div>
         <div

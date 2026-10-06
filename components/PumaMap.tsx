@@ -1,21 +1,22 @@
 "use client";
 import { useEffect, useRef } from "react";
-export default function PumaMap() {
+export default function PumaMap({ paused = false }: { paused?: boolean }) {
   const video = useRef<HTMLVideoElement>(null);
   useEffect(() => {
     const element = video.current;
     if (!element) return;
     element.defaultMuted = true;
     element.muted = true;
-    void element.play().catch(() => {});
+    if (paused) element.pause();
+    else void element.play().catch(() => {});
     return () => element.pause();
-  }, []);
+  }, [paused]);
   return (
     <video
       ref={video}
       className="puma-map"
       src="/videos/Puma_transparente_mapa.webm"
-      autoPlay
+      autoPlay={!paused}
       loop
       muted
       playsInline
