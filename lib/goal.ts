@@ -1,11 +1,12 @@
 export const DONATION_GOAL = 15000;
-export function goalProgress(total: number) {
+export const PUBLIC_DONATION_GOAL = 20000;
+export function goalProgress(total: number, goal = DONATION_GOAL, capPercent = true) {
   const safeTotal = Math.max(0, total);
   return {
     total: safeTotal,
-    remaining: Math.max(0, DONATION_GOAL - safeTotal),
-    percent: Math.min(100, (safeTotal / DONATION_GOAL) * 100),
-    reached: safeTotal >= DONATION_GOAL,
-    exceeded: safeTotal > DONATION_GOAL,
+    remaining: Math.max(0, goal - safeTotal),
+    percent: capPercent ? Math.min(100, (safeTotal / goal) * 100) : (safeTotal / goal) * 100,
+    reached: safeTotal >= goal,
+    exceeded: safeTotal > goal,
   };
 }

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { DONATION_GOAL, goalProgress } from "../lib/goal.ts";
+import { DONATION_GOAL, PUBLIC_DONATION_GOAL, goalProgress } from "../lib/goal.ts";
 import { donationDashboard } from "../lib/dashboard.ts";
 import { sedes } from "../data/sedes.ts";
 test("goal boundary, over-goal totals and reversals", () => {
@@ -24,6 +24,19 @@ test("goal boundary, over-goal totals and reversals", () => {
     exceeded: true,
   });
   assert.equal(goalProgress(14999).reached, false);
+});
+test("public goal uses 20,000 without capping the real percentage", () => {
+  assert.equal(PUBLIC_DONATION_GOAL, 20000);
+  for (const [total, percent] of [[15000, 75], [20000, 100], [20200, 101], [21000, 105], [24000, 120], [60000, 300]]) {
+    const progress = goalProgress(total, PUBLIC_DONATION_GOAL, false);
+    assert.equal(progress.total, total);
+    assert.equal(progress.percent, percent);
+    assert.equal(progress.remaining, Math.max(0, 20000 - total));
+    assert.equal(progress.reached, total >= 20000);
+  }
+  assert.equal(goalProgress(19999, PUBLIC_DONATION_GOAL, false).reached, false);
+  // The administration report retains its previous goal and capped percentage.
+  assert.equal(goalProgress(24000).percent, 100);
 });
 test("dashboard includes more than 100 records, real sums and Mexico City dates", () => {
   const records = Array.from({ length: 125 }, (_, i) => ({

@@ -6,7 +6,7 @@ import Brand from "@/components/Brand";
 import GoalProgress from "@/components/GoalProgress";
 import GoalAudio, { type GoalAudioHandle } from "@/components/GoalAudio";
 import GoalCelebration from "@/components/GoalCelebration";
-import { DONATION_GOAL } from "@/lib/goal";
+import { DONATION_GOAL, PUBLIC_DONATION_GOAL } from "@/lib/goal";
 import DonationCounter from "@/components/DonationCounter";
 import DonationCelebration, {
   type CelebrationHandle,
@@ -125,12 +125,12 @@ export default function PublicScreen({ vertical = false }: { vertical?: boolean 
     <main
       className={
         "screen" + (vertical ? " screen-vertical" : "") +
-        ((stats?.total ?? 0) >= DONATION_GOAL ? " screen-goal-reached" : "")
+        ((stats?.total ?? 0) >= PUBLIC_DONATION_GOAL ? " screen-goal-reached" : "")
       }
       onMouseMove={mouse}
       onTouchStart={mouse}
     >
-      <GoalAudio ref={goalAudio} reached={(stats?.total ?? 0) >= DONATION_GOAL} donationActive={!!active} />
+      <GoalAudio ref={goalAudio} reached={(stats?.total ?? 0) >= PUBLIC_DONATION_GOAL} donationActive={!!active} />
       <GoalCelebration active={(stats?.total ?? 0) >= DONATION_GOAL} total={stats?.total ?? 0} />
       <header className="screen-header">
         <Brand />
@@ -230,13 +230,13 @@ export default function PublicScreen({ vertical = false }: { vertical?: boolean 
             </span>
           </div>
           <Map sites={stats?.sites || initialSites} active={active} paused={celebrationPlaying} />
-          {(stats?.total ?? 0) >= DONATION_GOAL && (
+          {(stats?.total ?? 0) >= PUBLIC_DONATION_GOAL && (
             <div className="goal-banner" role="status">
               <strong>¡META ALCANZADA!</strong>
-              <span className="goal-milestone">{DONATION_GOAL.toLocaleString("es-MX")} <small>TOALLAS</small></span>
+              <span className="goal-milestone">{PUBLIC_DONATION_GOAL.toLocaleString("es-MX")} <small>TOALLAS</small></span>
               <em>¡GRACIAS, COMUNIDAD UNAM!</em>
               <p className="goal-community">JUNTAS Y JUNTOS, LA UNAM LO HIZO POSIBLE</p>
-              {stats!.total > DONATION_GOAL && (
+              {stats!.total > PUBLIC_DONATION_GOAL && (
                 <b>
                   TOTAL ALCANZADO · {stats!.total.toLocaleString("es-MX")}{" "}
                   TOALLAS

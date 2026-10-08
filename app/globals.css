@@ -2480,3 +2480,91 @@ td b {
 .party-initial-burst i { position: absolute; width: 5px; height: 65px; border-radius: 50%; background: linear-gradient(#ed629600,#f0c75d,#ed6296); transform-origin: 50% 0; }
 @keyframes party-arrival { 0% { opacity: 0; transform: scale(.5); } 25% { opacity: .9; } 100% { opacity: 0; transform: scale(2.6); } }
 .event-goal.goal-growing .goal-track:after { animation-duration: .8s; background: linear-gradient(90deg,transparent,#ffffffcf,transparent); }
+
+/* Public goal update; keep administration and the surrounding layout unchanged. */
+.event-goal .goal-next-challenge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 10px;
+  margin-bottom: 8px;
+}
+.event-goal .goal-previous {
+  position: relative;
+  display: inline-block;
+  padding: 3px 7px;
+  color: #fff;
+  font-size: clamp(16px, 1.5vw, 28px);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.event-goal .goal-previous small { font-size: .65em; }
+.event-goal .goal-previous-cross {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 2px #142544);
+}
+.event-goal .goal-previous-cross path {
+  stroke: #ff729e;
+  stroke-width: 4;
+  stroke-linecap: round;
+  fill: none;
+}
+.event-goal .goal-next-challenge > strong {
+  color: #f1c98f;
+  font-size: clamp(15px, 1.4vw, 26px);
+  line-height: 1.15;
+}
+@media (max-width: 700px) {
+  .screen .event-goal .goal-next-challenge { gap: 3px 6px; margin-bottom: 5px; }
+  .screen .event-goal .goal-previous { font-size: 14px; }
+  .screen .event-goal .goal-next-challenge > strong { font-size: 14px; }
+}
+.screen:not(.screen-vertical) .event-goal { flex-shrink: 0; }
+@media (orientation: landscape) {
+  .screen-vertical .event-grid {
+    grid-template-rows: minmax(220px, 26fr) minmax(0, 55fr) minmax(0, 12fr) minmax(0, 7fr);
+  }
+  .screen-vertical .event-goal-heading strong { font-size: 30px; }
+  .screen-vertical .event-goal-heading > b { font-size: 26px; }
+  .screen-vertical .event-goal-counts strong { font-size: 22px; }
+  .screen-vertical .event-goal-heading span,
+  .screen-vertical .event-goal-counts span { font-size: 10px; }
+  .screen-vertical .goal-next-challenge { margin-bottom: 4px; }
+  .screen-vertical .goal-next-challenge > strong { font-size: 18px; }
+  .screen-vertical .goal-previous { font-size: 18px; }
+  .screen-vertical .goal-status { font-size: 11px; }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .screen-vertical { min-height: 720px; height: auto; overflow: visible; }
+}
+@media (min-width: 1200px) and (orientation: landscape) {
+  .screen:not(.screen-vertical) .event-goal {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px 10px;
+    padding: 8px 10px;
+  }
+  .screen:not(.screen-vertical) .goal-next-challenge,
+  .screen:not(.screen-vertical) .goal-track,
+  .screen:not(.screen-vertical) .goal-pad-marks,
+  .screen:not(.screen-vertical) .goal-status { grid-column: 1 / -1; margin: 0; }
+  .screen:not(.screen-vertical) .goal-next-challenge { gap: 3px 6px; }
+  .screen:not(.screen-vertical) .goal-previous { font-size: 18px; }
+  .screen:not(.screen-vertical) .goal-next-challenge > strong { font-size: 18px; }
+  .screen:not(.screen-vertical) .event-goal-heading { gap: 6px; }
+  .screen:not(.screen-vertical) .event-goal-heading strong { font-size: 24px; }
+  .screen:not(.screen-vertical) .event-goal-heading > b { font-size: 22px; }
+  .screen:not(.screen-vertical) .event-goal-heading span { font-size: 8px; letter-spacing: 1px; }
+  .screen:not(.screen-vertical) .event-goal-counts { grid-column: 2; grid-row: 2; align-self: center; margin: 0; gap: 6px; }
+  .screen:not(.screen-vertical) .event-goal-counts strong { font-size: 18px; }
+  .screen:not(.screen-vertical) .event-goal-counts span { font-size: 7px; letter-spacing: .5px; }
+  .screen:not(.screen-vertical) .event-goal .goal-track { height: 10px; }
+  .screen:not(.screen-vertical) .goal-pad-marks { height: 16px; }
+  .screen:not(.screen-vertical) .goal-status { font-size: 10px; }
+}

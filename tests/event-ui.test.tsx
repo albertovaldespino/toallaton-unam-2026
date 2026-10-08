@@ -51,7 +51,7 @@ it('public polling queues successful events without duplicates and resets goal a
  let events:Donation[]=[],total=0;
  vi.stubGlobal('fetch',vi.fn(async(input:string)=>{if(input.startsWith('/api/donations/latest')){const after=new URL(input,'http://local').searchParams.get('after');return Response.json({cursor:after===null?'0':events.at(-1)?.sequence||after,events:after===null?[]:events.filter(e=>Number(e.sequence)>Number(after))})}return Response.json(stats(total))}));
  render(<PublicScreen/>);await act(async()=>vi.advanceTimersByTimeAsync(1));
- events=[donation,{...donation,id:'22222222-2222-4222-8222-222222222222',sequence:'2'}];total=15000;
+ events=[donation,{...donation,id:'22222222-2222-4222-8222-222222222222',sequence:'2'}];total=20000;
  await act(async()=>vi.advanceTimersByTimeAsync(7000));expect(document.querySelector('.screen-goal-reached')).not.toBeNull();const v=document.querySelector<HTMLVideoElement>('video')!;expect(v.muted).toBe(false);
  fireEvent.ended(v);await act(async()=>vi.advanceTimersByTimeAsync(5000));fireEvent.ended(v);await act(async()=>vi.advanceTimersByTimeAsync(6000));expect(document.querySelector('.celebration-idle')).not.toBeNull();
  total=14999;await act(async()=>vi.advanceTimersByTimeAsync(1500));expect(document.querySelector('.screen-goal-reached')).toBeNull();expect(document.querySelector('.goal-fireworks')).toBeNull();
@@ -78,15 +78,15 @@ it('public sound activation is saved for the session and pauses new applause vid
  expect(document.querySelector('.celebration-idle')).not.toBeNull();
 });
 it('public goal shows the real total above target and donor only when present',async()=>{
- vi.stubGlobal('fetch',vi.fn(async(input:string)=>Response.json(input.startsWith('/api/donations/latest')?{cursor:'0',events:[]}:stats(15500))));
+ vi.stubGlobal('fetch',vi.fn(async(input:string)=>Response.json(input.startsWith('/api/donations/latest')?{cursor:'0',events:[]}:stats(20500))));
  render(<PublicScreen/>);await act(async()=>vi.advanceTimersByTimeAsync(1500));
  expect(screen.getByText('LA UNAM NOS UNE')).toBeTruthy();
- expect(screen.getByText(/TOTAL ALCANZADO.*15,500/)).toBeTruthy();
+ expect(screen.getByText(/TOTAL ALCANZADO.*20,500/)).toBeTruthy();
  expect(screen.getByText('Donativo: Donante de prueba aislada')).toBeTruthy();
  expect(document.querySelector('.screen-goal-reached')).not.toBeNull();
 });
 it('vertical shares goal state, real total, donor and reverses without a second poller',async()=>{
- let total=14999;
+ let total=19999;
  const fetcher=vi.fn(async(input:string)=>Response.json(input.startsWith('/api/donations/latest')?{cursor:'0',events:[]}:stats(total)));
  vi.stubGlobal('fetch',fetcher);
  const Vertical=(await import('@/app/pantalla-vertical/page')).default;
@@ -94,7 +94,7 @@ it('vertical shares goal state, real total, donor and reverses without a second 
  expect(document.querySelector('.screen-vertical')).not.toBeNull();
  expect(document.querySelector('.screen-goal-reached')).toBeNull();
  expect(fetcher).toHaveBeenCalledTimes(2);
- for (const value of [15000,15250,16000]) {
+ for (const value of [20000,20200,24000]) {
    total=value;await act(async()=>vi.advanceTimersByTimeAsync(1500));
    expect(document.querySelector('.screen-goal-reached')).not.toBeNull();
    expect(document.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow')).toBe('100');
@@ -133,7 +133,8 @@ it('five queued donations reuse one video, keep totals and remove effects after 
  }
  expect(document.querySelector('.celebration-idle')).not.toBeNull();
  expect(vi.mocked(HTMLMediaElement.prototype.play).mock.contexts.filter(element => element instanceof HTMLVideoElement)).toHaveLength(5);
- expect(screen.getByText(/TOTAL ALCANZADO.*17,500/)).toBeTruthy();
+ expect(screen.getAllByText('17,500').length).toBeGreaterThan(0);
+ expect(document.querySelector('.event-goal-heading > b')?.textContent).toContain('87.5');
 });
 it('permanent Puma pauses and resumes silently on the same element',()=>{
  const {container,rerender}=render(<PumaMap/>);const video=container.querySelector('video');
@@ -174,3 +175,34 @@ it('goal song starts at goal, pauses for donation audio, resumes and does not lo
  fireEvent.ended(audio);rerender(<GoalAudio reached donationActive/>);rerender(<GoalAudio reached donationActive={false}/>);
  expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(2);
 });
+
+for (const vertical of [false, true]) {
+ it(`public ${vertical ? 'vertical' : 'horizontal'} keeps the previous goal crossed out and grows beyond 100% without replaying the old song`, async () => {
+  let total = 15000;
+  vi.stubGlobal('fetch',vi.fn(async(input:string)=>Response.json(input.startsWith('/api/donations/latest')?{cursor:'0',events:[]}:stats(total))));
+  const Component = vertical ? (await import('@/app/pantalla-vertical/page')).default : PublicScreen;
+  render(<Component/>);
+  await act(async()=>vi.advanceTimersByTimeAsync(1500));
+  expect(screen.getByLabelText('Meta anterior superada: 15,000 toallas')).toBeTruthy();
+  expect(document.querySelector('.goal-previous-cross path')?.getAttribute('d')).toBe('M4 4 L96 36 M96 4 L4 36');
+  expect(screen.getByText('¡VAMOS POR MÁS!')).toBeTruthy();
+  expect(document.querySelector('.event-goal-heading strong')?.textContent).toBe('20,000');
+  const audioPlays = () => vi.mocked(HTMLMediaElement.prototype.play).mock.contexts.filter(element => element instanceof HTMLAudioElement).length;
+  expect(audioPlays()).toBe(0);
+  for (const value of [15200, 16000, 19999]) {
+   total=value; await act(async()=>vi.advanceTimersByTimeAsync(1500));
+   expect(audioPlays()).toBe(0);
+  }
+  for (const [value, percent] of [[20000,100],[20200,101],[21000,105],[24000,120],[60000,300]]) {
+   total=value; await act(async()=>vi.advanceTimersByTimeAsync(1500));
+   expect(document.querySelector('.event-goal-heading > b')?.textContent).toBe(`${percent}%AVANCE`);
+   const bar=screen.getByRole('progressbar');
+   expect(bar.getAttribute('aria-valuenow')).toBe('100');
+   expect(bar.getAttribute('aria-valuetext')).toContain(`${percent}%`);
+   expect((bar.firstElementChild as HTMLElement).style.width).toBe('100%');
+   if(value>20000) expect(screen.getByText(new RegExp(`TOTAL ALCANZADO.*${value.toLocaleString('es-MX')}`))).toBeTruthy();
+   if(value===20000) fireEvent.ended(document.querySelector('audio')!);
+  }
+  expect(audioPlays()).toBe(1);
+ });
+}

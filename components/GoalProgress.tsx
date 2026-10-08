@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { DONATION_GOAL, goalProgress } from "@/lib/goal";
+import { DONATION_GOAL, PUBLIC_DONATION_GOAL, goalProgress } from "@/lib/goal";
 import AnimatedValue from "./AnimatedValue";
 export default function GoalProgress({
   total,
@@ -9,7 +9,9 @@ export default function GoalProgress({
   total: number | null;
   eventMode?: boolean;
 }) {
-  const progress = goalProgress(total ?? 0),
+  const target = eventMode ? PUBLIC_DONATION_GOAL : DONATION_GOAL,
+    progress = goalProgress(total ?? 0, target, !eventMode),
+    barPercent = Math.min(100, progress.percent),
     fmt = (n: number) => n.toLocaleString("es-MX");
   const previous = useRef(total),
     [growing, setGrowing] = useState(false);
@@ -31,10 +33,19 @@ export default function GoalProgress({
         className={`goal-progress event-goal ${progress.reached ? "goal-reached" : ""} ${growing ? "goal-growing" : ""}`}
         aria-label="Meta general"
       >
+        <div className="goal-next-challenge">
+          <span className="goal-previous" aria-label="Meta anterior superada: 15,000 toallas">
+            {fmt(DONATION_GOAL)} <small>toallas</small>
+            <svg className="goal-previous-cross" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M4 4 L96 36 M96 4 L4 36" />
+            </svg>
+          </span>
+          <strong>¡VAMOS POR MÁS!</strong>
+        </div>
         <div className="event-goal-heading">
           <div>
-            <span>META</span>
-            <strong>{fmt(DONATION_GOAL)}</strong>
+            <span>NUEVA META</span>
+            <strong>{fmt(target)}</strong>
           </div>
           <b>
             {total === null
@@ -48,12 +59,13 @@ export default function GoalProgress({
         <div
           className="goal-track"
           role="progressbar"
-          aria-label={`Avance hacia ${fmt(DONATION_GOAL)} toallas`}
+          aria-label={`Avance hacia ${fmt(target)} toallas`}
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-valuenow={total === null ? undefined : progress.percent}
+          aria-valuenow={total === null ? undefined : barPercent}
+          aria-valuetext={total === null ? "Esperando datos" : `${fmt(progress.percent)}% de la meta de ${fmt(target)} toallas`}
         >
-          <div style={{ width: `${progress.percent}%` }} />
+          <div style={{ width: `${barPercent}%` }} />
         </div>
         <div className="event-goal-counts">
           <div>
