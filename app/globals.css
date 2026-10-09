@@ -2568,3 +2568,34 @@ td b {
   .screen:not(.screen-vertical) .goal-pad-marks { height: 16px; }
   .screen:not(.screen-vertical) .goal-status { font-size: 10px; }
 }
+
+/* Completed public milestones and the next challenge, confined to the goal card. */
+.event-goal .goal-completed {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.screen .event-goal .goal-next-challenge > .goal-neon {
+  color: #fff3ca;
+  font-size: clamp(16px, 1.5vw, 28px);
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-shadow: 0 0 3px #fff3ca, 0 0 10px #ff729e, 0 0 20px #ff729e;
+  animation: goal-neon-pulse 2.6s ease-in-out infinite;
+}
+@keyframes goal-neon-pulse {
+  0%, 100% {
+    opacity: 1;
+    text-shadow: 0 0 3px #fff3ca, 0 0 10px #ff729e, 0 0 20px #ff729e;
+  }
+  50% {
+    opacity: .8;
+    text-shadow: 0 0 2px #fff3ca, 0 0 5px #ff729e;
+  }
+}
+@media (max-width: 700px) {
+  .event-goal .goal-completed .goal-previous small { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .screen .event-goal .goal-next-challenge > .goal-neon { animation: none; }
+}

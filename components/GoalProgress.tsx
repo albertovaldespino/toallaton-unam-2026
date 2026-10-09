@@ -34,13 +34,17 @@ export default function GoalProgress({
         aria-label="Meta general"
       >
         <div className="goal-next-challenge">
-          <span className="goal-previous" aria-label="Meta anterior superada: 20,000 toallas">
-            {fmt(PREVIOUS_PUBLIC_GOAL)} <small>toallas</small>
-            <svg className="goal-previous-cross" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
-              <path d="M4 4 L96 36 M96 4 L4 36" />
-            </svg>
-          </span>
-          <strong>OTRO POQUITO</strong>
+          <div className="goal-completed">
+            {[DONATION_GOAL, PREVIOUS_PUBLIC_GOAL].map((goal) => (
+              <span key={goal} className="goal-previous" aria-label={`Meta anterior superada: ${fmt(goal)} toallas`}>
+                {fmt(goal)} <small>toallas</small>
+                <svg className="goal-previous-cross" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
+                  <path d="M4 4 L96 36 M96 4 L4 36" />
+                </svg>
+              </span>
+            ))}
+          </div>
+          <strong className="goal-neon">OTRO POQUITO</strong>
         </div>
         <div className="event-goal-heading">
           <div>
