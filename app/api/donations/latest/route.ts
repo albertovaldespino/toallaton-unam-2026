@@ -13,7 +13,7 @@ export async function GET(req: Request) {
       return Response.json({ cursor: rows[0].cursor, events: [] });
     }
     const events =
-      await sql`SELECT id,sequence::text,site_id,site_name,quantity,created_at,deleted_at FROM donations WHERE sequence>${after}::bigint ORDER BY sequence ASC LIMIT 100`;
+      await sql`SELECT id,sequence::text,site_id,site_name,quantity,created_at,deleted_at FROM donations WHERE sequence>${after}::bigint ORDER BY donations.sequence ASC LIMIT 100`;
     return Response.json({
       cursor: events.at(-1)?.sequence || after,
       events: events
