@@ -2499,7 +2499,6 @@ td b {
   font-weight: 700;
   white-space: nowrap;
 }
-.event-goal .goal-previous small { font-size: .65em; }
 .event-goal .goal-previous-cross {
   position: absolute;
   inset: 0;
@@ -2575,6 +2574,9 @@ td b {
   align-items: center;
   gap: 6px;
 }
+.screen .event-goal .goal-completed .goal-previous {
+  font-size: clamp(24px, 2.2vw, 38px);
+}
 .screen .event-goal .goal-next-challenge > .goal-neon {
   color: #fff3ca;
   font-size: clamp(16px, 1.5vw, 28px);
@@ -2594,7 +2596,7 @@ td b {
   }
 }
 @media (max-width: 700px) {
-  .event-goal .goal-completed .goal-previous small { display: none; }
+  .screen .event-goal .goal-completed .goal-previous { font-size: 19px; padding: 3px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .screen .event-goal .goal-next-challenge > .goal-neon { animation: none; }

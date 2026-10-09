@@ -37,7 +37,7 @@ export default function GoalProgress({
           <div className="goal-completed">
             {[DONATION_GOAL, PREVIOUS_PUBLIC_GOAL].map((goal) => (
               <span key={goal} className="goal-previous" aria-label={`Meta anterior superada: ${fmt(goal)} toallas`}>
-                {fmt(goal)} <small>toallas</small>
+                {fmt(goal)}
                 <svg className="goal-previous-cross" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
                   <path d="M4 4 L96 36 M96 4 L4 36" />
                 </svg>
