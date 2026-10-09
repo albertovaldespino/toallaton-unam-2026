@@ -32,8 +32,8 @@ export default function PublicScreen({ vertical = false }: { vertical?: boolean 
     } catch {}
   }, []);
   async function activateSound() {
-    const [enabled] = await Promise.all([celebration.current?.activateSound(), goalAudio.current?.activateSound()]);
-    if (enabled) {
+    const enabled = await Promise.all([celebration.current?.activateSound(), goalAudio.current?.activateSound()]);
+    if (enabled.some(Boolean)) {
       setSoundEnabled(true);
       try {
         sessionStorage.setItem("toallaton-celebration-sound", "enabled");
@@ -130,7 +130,7 @@ export default function PublicScreen({ vertical = false }: { vertical?: boolean 
       onMouseMove={mouse}
       onTouchStart={mouse}
     >
-      <GoalAudio ref={goalAudio} reached={(stats?.total ?? 0) >= PUBLIC_DONATION_GOAL} donationActive={!!active} />
+      <GoalAudio ref={goalAudio} reached={(stats?.total ?? 0) >= PUBLIC_DONATION_GOAL} />
       <GoalCelebration active={(stats?.total ?? 0) >= DONATION_GOAL} total={stats?.total ?? 0} />
       <header className="screen-header">
         <Brand />

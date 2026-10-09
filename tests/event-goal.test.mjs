@@ -25,14 +25,14 @@ test("goal boundary, over-goal totals and reversals", () => {
   });
   assert.equal(goalProgress(14999).reached, false);
 });
-test("public goal uses 20,000 without capping the real percentage", () => {
-  assert.equal(PUBLIC_DONATION_GOAL, 20000);
-  for (const [total, percent] of [[15000, 75], [20000, 100], [20200, 101], [21000, 105], [24000, 120], [60000, 300]]) {
+test("public goal uses 22,500 without capping the real percentage", () => {
+  assert.equal(PUBLIC_DONATION_GOAL, 22500);
+  for (const [total, percent] of [[11250, 50], [22500, 100], [22725, 101], [23625, 105], [27000, 120], [67500, 300]]) {
     const progress = goalProgress(total, PUBLIC_DONATION_GOAL, false);
     assert.equal(progress.total, total);
     assert.equal(progress.percent, percent);
-    assert.equal(progress.remaining, Math.max(0, 20000 - total));
-    assert.equal(progress.reached, total >= 20000);
+    assert.equal(progress.remaining, Math.max(0, 22500 - total));
+    assert.equal(progress.reached, total >= 22500);
   }
   assert.equal(goalProgress(19999, PUBLIC_DONATION_GOAL, false).reached, false);
   // The administration report retains its previous goal and capped percentage.

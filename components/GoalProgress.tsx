@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { DONATION_GOAL, PUBLIC_DONATION_GOAL, goalProgress } from "@/lib/goal";
+import { DONATION_GOAL, PREVIOUS_PUBLIC_GOAL, PUBLIC_DONATION_GOAL, goalProgress } from "@/lib/goal";
 import AnimatedValue from "./AnimatedValue";
 export default function GoalProgress({
   total,
@@ -34,13 +34,13 @@ export default function GoalProgress({
         aria-label="Meta general"
       >
         <div className="goal-next-challenge">
-          <span className="goal-previous" aria-label="Meta anterior superada: 15,000 toallas">
-            {fmt(DONATION_GOAL)} <small>toallas</small>
+          <span className="goal-previous" aria-label="Meta anterior superada: 20,000 toallas">
+            {fmt(PREVIOUS_PUBLIC_GOAL)} <small>toallas</small>
             <svg className="goal-previous-cross" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
               <path d="M4 4 L96 36 M96 4 L4 36" />
             </svg>
           </span>
-          <strong>¡VAMOS POR MÁS!</strong>
+          <strong>OTRO POQUITO</strong>
         </div>
         <div className="event-goal-heading">
           <div>
