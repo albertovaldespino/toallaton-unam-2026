@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { DONATION_GOAL, PREVIOUS_PUBLIC_GOAL, PUBLIC_DONATION_GOAL, goalProgress } from "@/lib/goal";
+import { DONATION_GOAL, PREVIOUS_PUBLIC_GOAL, goalProgress } from "@/lib/goal";
 import AnimatedValue from "./AnimatedValue";
 export default function GoalProgress({
   total,
@@ -9,8 +9,9 @@ export default function GoalProgress({
   total: number | null;
   eventMode?: boolean;
 }) {
-  const target = eventMode ? PUBLIC_DONATION_GOAL : DONATION_GOAL,
-    progress = goalProgress(total ?? 0, target, !eventMode),
+  const target = DONATION_GOAL,
+    progress = goalProgress(total ?? 0, target),
+    additional = Math.max(0, (total ?? 0) - target),
     barPercent = Math.min(100, progress.percent),
     fmt = (n: number) => n.toLocaleString("es-MX");
   const previous = useRef(total),
@@ -48,7 +49,7 @@ export default function GoalProgress({
         </div>
         <div className="event-goal-heading">
           <div>
-            <span>NUEVA META</span>
+            <span>META INICIAL</span>
             <strong>{fmt(target)}</strong>
           </div>
           <b>
@@ -79,10 +80,10 @@ export default function GoalProgress({
             </strong>
           </div>
           <div>
-            <span>NOS FALTAN</span>
+            <span>{progress.reached ? "ADICIONALES" : "NOS FALTAN"}</span>
             <strong>
               <AnimatedValue
-                value={total === null ? null : progress.remaining}
+                value={total === null ? null : progress.reached ? additional : progress.remaining}
               />
             </strong>
           </div>
@@ -121,7 +122,7 @@ export default function GoalProgress({
         <div>
           <span>
             {progress.exceeded
-              ? "META SUPERADA"
+              ? "TOALLAS ADICIONALES"
               : progress.reached
                 ? "¡META ALCANZADA!"
                 : "NOS FALTAN"}
@@ -130,7 +131,7 @@ export default function GoalProgress({
             {total === null
               ? "—"
               : progress.reached
-                ? fmt(progress.total)
+                ? fmt(additional)
                 : fmt(progress.remaining)}{" "}
             <small>toallas</small>
           </strong>

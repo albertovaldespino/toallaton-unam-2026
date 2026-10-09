@@ -1,8 +1,7 @@
 "use client";
 import {forwardRef,useCallback,useEffect,useImperativeHandle,useRef,useState} from "react";
-import { PUBLIC_DONATION_GOAL } from "@/lib/goal";
 export type GoalAudioHandle={activateSound:()=>Promise<boolean>};
-const STORAGE_KEY = `toallaton-goal-${PUBLIC_DONATION_GOAL}-audio`;
+const STORAGE_KEY = "toallaton-next-donation-audio-v1";
 const GoalAudio=forwardRef<GoalAudioHandle,{reached:boolean;donationActive?:boolean}>(function GoalAudio({reached},ref){
  const audio=useRef<HTMLAudioElement>(null), completed=useRef(false);
  const position=useRef(0), started=useRef(false);
@@ -36,7 +35,7 @@ const GoalAudio=forwardRef<GoalAudioHandle,{reached:boolean;donationActive?:bool
   element.volume=0; element.muted=false;
   try{
    await element.play();
-   if(!allowed.current){element.pause();}else{started.current=true;}
+   if(!allowed.current){element.pause();element.currentTime=position.current;}else{started.current=true;}
    element.volume=1;
    return true;
   }catch{element.volume=1;return false;}
@@ -47,6 +46,6 @@ const GoalAudio=forwardRef<GoalAudioHandle,{reached:boolean;donationActive?:bool
  },[reached,play]);
  useEffect(()=>{const element=audio.current;return()=>{remember();element?.pause();};},[remember]);
  return <><audio ref={audio} src="/audio/meta-we-will-rock-you.mp3" preload="auto" onLoadedMetadata={restorePosition} onTimeUpdate={remember} onPause={remember} onEnded={()=>{completed.current=true;remember();setBlocked(false);}} />
- {blocked&&reached&&<button className="audio-recovery" style={{position:'fixed',zIndex:1100}} onClick={()=>void play()}>🔊 Reproducir canción de la meta</button>}</>;
+ {blocked&&reached&&<button className="audio-recovery" style={{position:'fixed',zIndex:1100}} onClick={()=>void play()}>🔊 Reproducir canción de celebración</button>}</>;
 });
 export default GoalAudio;

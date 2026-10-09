@@ -18,6 +18,7 @@ const initialSites = sedes.map((s) => ({ ...s, total: 0, count: 0 }));
 export default function PublicScreen({ vertical = false }: { vertical?: boolean }) {
   const [stats, setStats] = useState<Stats | null>(null),
     [offline, setOffline] = useState(false),
+    [songRequested, setSongRequested] = useState(false),
     [active, setActive] = useState<Donation | null>(null),
     [controls, setControls] = useState(true),
     [soundEnabled, setSoundEnabled] = useState(false),
@@ -26,14 +27,12 @@ export default function PublicScreen({ vertical = false }: { vertical?: boolean 
   const goalAudio = useRef<GoalAudioHandle>(null);
   useEffect(() => {
     try {
-      setSoundEnabled(
-        sessionStorage.getItem("toallaton-celebration-sound") === "enabled",
-      );
+      setSongRequested(sessionStorage.getItem("toallaton-next-donation-song-triggered") === "true");
     } catch {}
   }, []);
   async function activateSound() {
     const enabled = await Promise.all([celebration.current?.activateSound(), goalAudio.current?.activateSound()]);
-    if (enabled.some(Boolean)) {
+    if (enabled.every(Boolean)) {
       setSoundEnabled(true);
       try {
         sessionStorage.setItem("toallaton-celebration-sound", "enabled");
@@ -43,6 +42,7 @@ export default function PublicScreen({ vertical = false }: { vertical?: boolean 
   const queue = useRef<Donation[]>([]),
     busy = useRef(false),
     cursor = useRef<string | null>(null),
+    songBaseline = useRef<string | null>(null),
     hide = useRef<ReturnType<typeof setTimeout> | null>(null);
   const next = useCallback(() => {
     const item = queue.current.shift();
@@ -63,42 +63,54 @@ export default function PublicScreen({ vertical = false }: { vertical?: boolean 
       }
     } catch {}
     let stopped = false;
-    let timer: ReturnType<typeof setTimeout>;
-    async function poll() {
-      try {
-        const response = await fetch(
-          "/api/donations/latest" +
-            (cursor.current === null ? "" : "?after=" + cursor.current),
-          { cache: "no-store" },
-        );
-        if (!response.ok) throw Error();
-        const data = await response.json();
-        if (stopped) return;
-        queue.current.push(...data.events);
-        cursor.current = data.cursor;
-        localStorage.setItem(
-          "toallaton-playback",
-          JSON.stringify({ cursor: data.cursor, queue: queue.current }),
-        );
-        if (!busy.current && queue.current.length) next();
-        const res = await fetch("/api/stats", { cache: "no-store" });
-        if (!res.ok) throw Error();
-        const summary = await res.json();
-        if (!stopped) {
-          setStats(summary);
-          setOffline(false);
-          localStorage.setItem("toallaton-stats", JSON.stringify(summary));
-        }
-      } catch {
-        if (!stopped) setOffline(true);
-      } finally {
-        if (!stopped) timer = setTimeout(poll, 1000);
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const failures = [false, false];
+    async function pollEvents() {
+      let response: Response;
+      if (songBaseline.current === null) {
+        const baseline = await fetch("/api/donations/latest", { cache: "no-store" });
+        if (!baseline.ok) throw Error();
+        songBaseline.current = (await baseline.clone().json()).cursor;
+        response = cursor.current === null ? baseline : await fetch(`/api/donations/latest?after=${cursor.current}`, { cache: "no-store" });
+      } else {
+        response = await fetch(`/api/donations/latest?after=${cursor.current}`, { cache: "no-store" });
+      }
+      if (!response.ok) throw Error();
+      const data = await response.json();
+      if (stopped) return;
+      const newEvents = data.events.filter((event: Donation) =>
+        cursor.current !== null && BigInt(event.sequence) > BigInt(cursor.current),
+      );
+      if (newEvents.some((event: Donation) => BigInt(event.sequence) > BigInt(songBaseline.current!))) {
+        setSongRequested(true);
+        try { sessionStorage.setItem("toallaton-next-donation-song-triggered", "true"); } catch {}
+      }
+      queue.current.push(...newEvents);
+      cursor.current = data.cursor;
+      localStorage.setItem("toallaton-playback", JSON.stringify({ cursor: data.cursor, queue: queue.current }));
+      if (!busy.current && queue.current.length) next();
+    }
+    async function pollStats() {
+      const response = await fetch("/api/stats", { cache: "no-store" });
+      if (!response.ok) throw Error();
+      const summary = await response.json();
+      if (stopped) return;
+      setStats(summary);
+      localStorage.setItem("toallaton-stats", JSON.stringify(summary));
+    }
+    async function poll(action: () => Promise<void>, channel: number) {
+      try { await action(); failures[channel] = false; }
+      catch { failures[channel] = true; }
+      if (!stopped) {
+        setOffline(failures.some(Boolean));
+        timers[channel] = setTimeout(() => void poll(action, channel), 1000);
       }
     }
-    void poll();
+    void poll(pollEvents, 0);
+    void poll(pollStats, 1);
     return () => {
       stopped = true;
-      clearTimeout(timer);
+      timers.forEach((timer) => clearTimeout(timer));
     };
   }, [next]);
   useEffect(() => {
@@ -130,7 +142,7 @@ export default function PublicScreen({ vertical = false }: { vertical?: boolean 
       onMouseMove={mouse}
       onTouchStart={mouse}
     >
-      <GoalAudio ref={goalAudio} reached={(stats?.total ?? 0) >= PUBLIC_DONATION_GOAL} />
+      <GoalAudio ref={goalAudio} reached={songRequested} />
       <GoalCelebration active={(stats?.total ?? 0) >= DONATION_GOAL} total={stats?.total ?? 0} />
       <header className="screen-header">
         <Brand />
@@ -192,11 +204,9 @@ export default function PublicScreen({ vertical = false }: { vertical?: boolean 
                 <h3>{stats.latest.site_name}</h3>
                 <p>
                   +{stats.latest.quantity.toLocaleString("es-MX")} toallas{" "}
-                  {stats.latest.donor?.trim() && (
-                    <span className="latest-donor">
-                      Donativo: {stats.latest.donor}
-                    </span>
-                  )}
+                  <span className="latest-donor">
+                    Donativo: {stats.latest.donor?.trim() || "Anónimo"}
+                  </span>
                   <span>¡Gracias por sumar!</span>
                 </p>
               </>

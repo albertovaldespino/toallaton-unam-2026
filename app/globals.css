@@ -2601,3 +2601,13 @@ td b {
 @media (prefers-reduced-motion: reduce) {
   .screen .event-goal .goal-next-challenge > .goal-neon { animation: none; }
 }
+
+/* Keep the latest donor readable alongside the completed milestones. */
+.screen:not(.screen-vertical) .total-panel { padding-top: 18px; padding-bottom: 12px; }
+.screen:not(.screen-vertical) .counter strong { margin: 6px 0; }
+.screen:not(.screen-vertical) .small-stats { padding-top: 10px; padding-bottom: 10px; }
+.screen:not(.screen-vertical) .latest { flex-shrink: 0; margin-top: 6px; padding: 8px 0 4px 12px; }
+.screen:not(.screen-vertical) .latest h3,
+.screen:not(.screen-vertical) .latest p { margin: 4px 0; }
+.screen .latest p .latest-donor { font-size: clamp(12px, 1vw, 16px); }
+.screen-vertical .latest p .latest-donor { display: block; margin-left: 0; font-size: clamp(12px, 1.6vw, 20px); line-height: 1.2; }

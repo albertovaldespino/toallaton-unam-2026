@@ -40,7 +40,7 @@ it('blocked audible autoplay preserves donation until explicit recovery, never f
 });
 it('goal remains active at or above threshold and cancels effects below it',()=>{
  const {rerender}=render(<><GoalProgress total={15000}/><GoalCelebration active/></>);expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('100');expect(screen.getByText('¡META ALCANZADA!')).toBeTruthy();expect(effects.launch).toHaveBeenCalled();
- rerender(<><GoalProgress total={15500}/><GoalCelebration active/></>);expect(screen.getByText('META SUPERADA')).toBeTruthy();
+ rerender(<><GoalProgress total={15500}/><GoalCelebration active/></>);expect(screen.getByText('TOALLAS ADICIONALES')).toBeTruthy();
  rerender(<><GoalProgress total={11000}/><GoalCelebration active={false}/></>);expect(effects.reset).toHaveBeenCalled();expect(document.querySelector('.goal-fireworks')).toBeNull();
 });
 it('dashboard includes all 125 donors, pagination, graphs and printable report',()=>{
@@ -134,7 +134,7 @@ it('five queued donations reuse one video, keep totals and remove effects after 
  expect(document.querySelector('.celebration-idle')).not.toBeNull();
  expect(vi.mocked(HTMLMediaElement.prototype.play).mock.contexts.filter(element => element instanceof HTMLVideoElement)).toHaveLength(5);
  expect(screen.getAllByText('17,500').length).toBeGreaterThan(0);
- expect(document.querySelector('.event-goal-heading > b')?.textContent).toContain('77.8');
+ expect(document.querySelector('.event-goal-heading > b')?.textContent).toContain('100');
 });
 it('permanent Puma pauses and resumes silently on the same element',()=>{
  const {container,rerender}=render(<PumaMap/>);const video=container.querySelector('video');
@@ -177,16 +177,17 @@ it('goal song starts immediately, continues during donations and does not loop',
 });
 
 for (const vertical of [false, true]) {
- it(`public ${vertical ? 'vertical' : 'horizontal'} keeps the previous goal crossed out and grows beyond 100% without replaying the old song`, async () => {
+ it(`public ${vertical ? 'vertical' : 'horizontal'} keeps the completed milestones, caps base progress and plays the song on the next donation`, async () => {
   let total = 15000;
-  vi.stubGlobal('fetch',vi.fn(async(input:string)=>Response.json(input.startsWith('/api/donations/latest')?{cursor:'0',events:[]}:stats(total))));
+  let events:Donation[]=[];
+  vi.stubGlobal('fetch',vi.fn(async(input:string)=>Response.json(input.startsWith('/api/donations/latest')?{cursor:events.at(-1)?.sequence||'0',events}:stats(total))));
   const Component = vertical ? (await import('@/app/pantalla-vertical/page')).default : PublicScreen;
   render(<Component/>);
   await act(async()=>vi.advanceTimersByTimeAsync(1500));
   expect(screen.getByLabelText('Meta anterior superada: 20,000 toallas')).toBeTruthy();
   expect(document.querySelector('.goal-previous-cross path')?.getAttribute('d')).toBe('M4 4 L96 36 M96 4 L4 36');
   expect(screen.getByText('OTRO POQUITO')).toBeTruthy();
-  expect(document.querySelector('.event-goal-heading strong')?.textContent).toBe('22,500');
+  expect(document.querySelector('.event-goal-heading strong')?.textContent).toBe('15,000');
   const audioPlays = () => vi.mocked(HTMLMediaElement.prototype.play).mock.contexts.filter(element => element instanceof HTMLAudioElement).length;
   expect(audioPlays()).toBe(0);
   for (const value of [15200, 16000, 19999]) {
@@ -195,14 +196,65 @@ for (const vertical of [false, true]) {
   }
   for (const [value, percent] of [[22500,100],[22725,101],[23625,105],[27000,120],[67500,300]]) {
    total=value; await act(async()=>vi.advanceTimersByTimeAsync(1500));
-   expect(document.querySelector('.event-goal-heading > b')?.textContent).toBe(`${percent}%AVANCE`);
+   expect(document.querySelector('.event-goal-heading > b')?.textContent).toBe(`100%AVANCE`);
    const bar=screen.getByRole('progressbar');
    expect(bar.getAttribute('aria-valuenow')).toBe('100');
-   expect(bar.getAttribute('aria-valuetext')).toContain(`${percent}%`);
+   expect(bar.getAttribute('aria-valuetext')).toContain(`100%`);
    expect((bar.firstElementChild as HTMLElement).style.width).toBe('100%');
    if(value>22500) expect(screen.getByText(new RegExp(`TOTAL ALCANZADO.*${value.toLocaleString('es-MX')}`))).toBeTruthy();
-   if(value===22500) fireEvent.ended(document.querySelector('audio')!);
+   expect(screen.getByText("ADICIONALES")).toBeTruthy();
+   expect(audioPlays()).toBe(0);
   }
+  events=[donation];
+  await act(async()=>vi.advanceTimersByTimeAsync(1500));
+  expect(audioPlays()).toBe(1);
+  fireEvent.ended(document.querySelector('audio')!);
+  await act(async()=>vi.advanceTimersByTimeAsync(1500));
   expect(audioPlays()).toBe(1);
  });
 }
+
+it('latest donor continues updating when the celebration event endpoint fails',async()=>{
+ let latest={...donation,donor:'Primer donante simulado'};
+ vi.stubGlobal('fetch',vi.fn(async(input:string,init?:RequestInit)=>{
+  expect(init?.cache).toBe('no-store');
+  return input.startsWith('/api/donations/latest')?Response.json({error:'isolated outage'},{status:503}):Response.json({...stats(22000),latest});
+ }));
+ render(<PublicScreen/>);await act(async()=>vi.advanceTimersByTimeAsync(1));
+ expect(screen.getByText('Donativo: Primer donante simulado')).toBeTruthy();
+ latest={...latest,id:'second-isolated',sequence:'2',donor:'Segundo donante simulado'};
+ await act(async()=>vi.advanceTimersByTimeAsync(1500));
+ expect(screen.getByText('Donativo: Segundo donante simulado')).toBeTruthy();
+ expect(screen.queryByText('Donativo: Primer donante simulado')).toBeNull();
+});
+
+it('a saved sound label never implies autoplay permission after a reload',async()=>{
+ sessionStorage.setItem('toallaton-celebration-sound','enabled');
+ vi.stubGlobal('fetch',vi.fn(async(input:string)=>Response.json(input.startsWith('/api/donations/latest')?{cursor:'0',events:[]}:stats(22000))));
+ render(<PublicScreen/>);await act(async()=>vi.advanceTimersByTimeAsync(1));
+ expect(screen.getByRole('button',{name:'🔊 Activar sonido de celebraciones'}).getAttribute('aria-pressed')).toBe('false');
+});
+it('queued history does not trigger the next-donation song before a new live event',async()=>{
+ localStorage.setItem('toallaton-playback',JSON.stringify({cursor:'0',queue:[]}));
+ let events=[donation];let cursor='1';
+ vi.stubGlobal('fetch',vi.fn(async(input:string)=>{
+  if(input==='/api/donations/latest')return Response.json({cursor,events:[]});
+  if(input.startsWith('/api/donations/latest'))return Response.json({cursor,events});
+  return Response.json(stats(22000));
+ }));
+ render(<PublicScreen/>);await act(async()=>vi.advanceTimersByTimeAsync(1500));
+ const plays=()=>vi.mocked(HTMLMediaElement.prototype.play).mock.contexts.filter(e=>e instanceof HTMLAudioElement).length;
+ expect(plays()).toBe(0);
+ events=[{...donation,id:'new-live',sequence:'2'}];cursor='2';
+ await act(async()=>vi.advanceTimersByTimeAsync(1500));expect(plays()).toBe(1);
+});
+
+it('an event request that stays pending cannot freeze the latest donor',async()=>{
+ let latest={...donation,donor:'Antes de la espera'};
+ vi.stubGlobal('fetch',vi.fn(async(input:string)=>input.startsWith('/api/donations/latest')?new Promise<Response>(()=>{}):Response.json({...stats(22000),latest})));
+ render(<PublicScreen/>);await act(async()=>vi.advanceTimersByTimeAsync(1));
+ expect(screen.getByText('Donativo: Antes de la espera')).toBeTruthy();
+ latest={...latest,sequence:'2',donor:'Durante la espera'};
+ await act(async()=>vi.advanceTimersByTimeAsync(1500));
+ expect(screen.getByText('Donativo: Durante la espera')).toBeTruthy();
+});

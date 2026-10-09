@@ -12,7 +12,7 @@ export async function GET() {
       ],
       { isolationLevel: "RepeatableRead", readOnly: true },
     );
-    return Response.json({ ...summary[0], sites, latest: last[0] || null });
+    return Response.json({ ...summary[0], sites, latest: last[0] || null }, { headers: { "Cache-Control": "no-store, max-age=0" } });
   } catch (e) {
     return failure(e);
   }

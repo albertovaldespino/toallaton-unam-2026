@@ -42,12 +42,13 @@ export default function Admin() {
     refreshing.current = true;
     try {
       const responses = await Promise.all([
-        fetch("/api/stats"),
-        fetch("/api/sites"),
+        fetch("/api/stats", { cache: "no-store" }),
+        fetch("/api/sites", { cache: "no-store" }),
         ...(key
           ? [
               fetch("/api/donations?all=1", {
                 headers: { "x-admin-password": key },
+                cache: "no-store",
               }),
             ]
           : []),
@@ -243,6 +244,7 @@ export default function Admin() {
             <strong>
               {stats?.latest ? "+" + fmt(stats.latest.quantity) : "—"}
               <small>
+                {stats?.latest && `${stats.latest.donor?.trim() || "Anónimo"} · `}
                 {stats?.latest
                   ? new Date(stats.latest.created_at).toLocaleTimeString(
                       "es-MX",

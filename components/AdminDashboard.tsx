@@ -77,11 +77,11 @@ export default function AdminDashboard({
           [
             "Última donación",
             latest
-              ? `+${fmt(latest.quantity)} · ${latest.site_name} · ${date(latest.created_at)} ${time(latest.created_at)}`
+              ? `+${fmt(latest.quantity)} · ${latest.site_name} · ${latest.donor?.trim() || "Anónimo"} · ${date(latest.created_at)} ${time(latest.created_at)}`
               : "Sin registros",
           ],
           ["Avance a la meta", `${fmt(progress.percent)}%`],
-          ["Toallas faltantes", fmt(progress.remaining)],
+          [progress.reached ? "Toallas adicionales" : "Toallas faltantes", fmt(progress.reached ? Math.max(0, data.total - DONATION_GOAL) : progress.remaining)],
         ].map(([label, value]) => (
           <article key={label}>
             <span>{label}</span>

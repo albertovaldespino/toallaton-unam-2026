@@ -2,7 +2,7 @@ import React from 'react';
 import {afterEach,beforeEach,expect,it,vi} from 'vitest';
 import {act,cleanup,fireEvent,render,screen} from '@testing-library/react';
 import GoalAudio from '@/components/GoalAudio';
-const key='toallaton-goal-22500-audio';
+const key='toallaton-next-donation-audio-v1';
 beforeEach(()=>{
  sessionStorage.clear();
  vi.spyOn(HTMLMediaElement.prototype,'play').mockResolvedValue();
@@ -51,9 +51,9 @@ it('preserves the existing recovery button when autoplay is denied',async()=>{
  const {container}=render(<GoalAudio reached donationActive={false}/>);await act(async()=>{});
  const audio=container.querySelector('audio')!;
  expect(JSON.parse(sessionStorage.getItem(key)||'null')).toBeNull();
- await act(async()=>fireEvent.click(screen.getByRole('button',{name:'🔊 Reproducir canción de la meta'})));
+ await act(async()=>fireEvent.click(screen.getByRole('button',{name:'🔊 Reproducir canción de celebración'})));
  expect(audio.play).toHaveBeenCalledTimes(2);
- expect(screen.queryByRole('button',{name:'🔊 Reproducir canción de la meta'})).toBeNull();
+ expect(screen.queryByRole('button',{name:'🔊 Reproducir canción de celebración'})).toBeNull();
 });
 
 it('a completed previous goal does not suppress the new goal song',async()=>{

@@ -25,7 +25,7 @@ test("goal boundary, over-goal totals and reversals", () => {
   });
   assert.equal(goalProgress(14999).reached, false);
 });
-test("public goal uses 22,500 without capping the real percentage", () => {
+test("optional stretch-goal calculation remains available without changing base progress", () => {
   assert.equal(PUBLIC_DONATION_GOAL, 22500);
   for (const [total, percent] of [[11250, 50], [22500, 100], [22725, 101], [23625, 105], [27000, 120], [67500, 300]]) {
     const progress = goalProgress(total, PUBLIC_DONATION_GOAL, false);
